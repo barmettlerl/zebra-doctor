@@ -21,7 +21,8 @@ from asyncio import run as create_task, get_event_loop
 from rich.progress import Progress, SpinnerColumn, TextColumn
 import asyncio
 from kubernetes import client, config
-from rich import print
+from rich import print, rule
+from rich.table import Table
 
 class NamspaceException(Exception):
     pass
@@ -56,6 +57,18 @@ def run():
 
                     config.load_kube_config()
                     v1 = client.CoreV1Api()
+
+                    nodes = v1.list_node()
+                    table = Table(title="Nodes informations")
+
+                    table.add_column("Name", justify="right", style="cyan", no_wrap=True)
+                    table.add_column("CPU", style="magenta")
+                    table.add_column("Memory", justify="right", style="green")
+
+                    for node in nodes.items:
+                        table.add_row(f"{node.metadata.name}", f"{node.status.capacity['cpu']}", f"{node.status.capacity['memory']}")
+                   
+                    print(table)
 
                     create_namespace(v1)
 

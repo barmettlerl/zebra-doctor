@@ -1,0 +1,21 @@
+[package]
+name = "node"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[[bin]]
+name = "database_runner"
+path = "src/database_runner.rs"
+
+[[bin]]
+name = "server"
+path = "src/server.rs"
+
+
+[dependencies]
+dotenv = "0.15.0"
+zebra = { path = "../../tenacious-zebra" }
+serde = { version = "1.0", features = ["derive"] }
+rocket = { version = "=0.5.0-rc.3", features = ["json"] }
