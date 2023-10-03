@@ -65,7 +65,6 @@ fn transaction_serialize_backup(transaction: Json<Transaction>, s: &State<Runner
     s.db.backup("./backup");
 }
 
-
 #[launch]
 fn rocket() -> _ {
     dotenv().ok();

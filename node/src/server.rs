@@ -20,7 +20,8 @@ enum TestProgramm {
     SingleClientSingleServer,
 }
 
-struct CommandContainer {
+struct ServerState {
+    database_runner_path: String,
     child: Mutex<Option<Child>>,
 }
 
@@ -31,8 +32,8 @@ fn index() -> &'static str {
 }
 
 #[get("/start")] 
-fn start(state: &State<CommandContainer>) -> &'static str {
-    *state.child.lock().unwrap() = Some(Command::new("target/debug/database_runner")
+fn start(state: &State<ServerState>) -> &'static str {
+    *state.child.lock().unwrap() = Some(Command::new(state.database_runner_path.clone())
     .spawn()
     .expect("failed to execute child"));
 
@@ -40,7 +41,7 @@ fn start(state: &State<CommandContainer>) -> &'static str {
 }
 
 #[get("/stop")] 
-fn stop(state: &State<CommandContainer>) -> &'static str {
+fn stop(state: &State<ServerState>) -> &'static str {
     if let Some(child) = state.child.lock().unwrap().as_mut() {
         child.kill().expect("failed to kill child");
     }
@@ -50,9 +51,11 @@ fn stop(state: &State<CommandContainer>) -> &'static str {
 
 #[launch]
 fn rocket() -> _ {
+    dotenv().ok();
 
     rocket::build()
-    .manage(CommandContainer {
+    .manage(ServerState {
+        database_runner_path: env::var("DATABASE_RUNNER_PATH").unwrap(),
         child: Mutex::new(None),
     })
     .mount("/", routes![index, start, stop])
