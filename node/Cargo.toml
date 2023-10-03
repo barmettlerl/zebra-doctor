@@ -16,6 +16,6 @@ path = "src/server.rs"
 
 [dependencies]
 dotenv = "0.15.0"
-zebra = { path = "../../tenacious-zebra" }
+zebra = { git = "https://github.com/barmettlerl/tenacious-zebra" }
 serde = { version = "1.0", features = ["derive"] }
 rocket = { version = "=0.5.0-rc.3", features = ["json"] }

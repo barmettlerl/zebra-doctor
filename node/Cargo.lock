@@ -1019,6 +1019,7 @@ dependencies = [
 [[package]]
 name = "oh-snap"
 version = "0.0.5"
+source = "git+https://github.com/barmettlerl/oh-snap#92722b67c70f48fa8beae5fe46178ee1a17cb6c5"
 dependencies = [
  "serde",
 ]
@@ -1675,6 +1676,7 @@ dependencies = [
 [[package]]
 name = "talk"
 version = "0.1.0"
+source = "git+https://github.com/barmettlerl/talk#b8d83c330404e3523e7cd2bef70a89d44fceecae"
 dependencies = [
  "async-trait",
  "atomic-counter",
@@ -2185,6 +2187,7 @@ checksum = "1367295b8f788d371ce2dbc842c7b709c73ee1364d30351dd300ec2203b12377"
 [[package]]
 name = "zebra"
 version = "0.1.0"
+source = "git+https://github.com/barmettlerl/tenacious-zebra#52ca6e683cf4298f87440a6895bb0fad8232ac8f"
 dependencies = [
  "bincode",
  "bit-vec",
