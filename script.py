@@ -1,14 +1,13 @@
 import time
 import typer
-from asyncio import run as create_task, get_event_loop
+from asyncio import run
 from rich.progress import Progress, SpinnerColumn, TextColumn
-import asyncio
 from kubernetes import client, config
 from rich import print
 from rich.table import Table
-import aiohttp
-import asyncio
 import requests
+import asyncio
+import threading
 import json
 
 class NamspaceException(Exception):
@@ -93,7 +92,7 @@ def create_node_port_service(v1, namespace):
             selector={"app": "test-app"},
             ports=[
                 client.V1ServicePort(name="server", port=8000, target_port=8000, node_port=30080),
-                client.V1ServicePort(name="database_runner", port=3000, target_port=3000, node_port=30030),
+                client.V1ServicePort(name="database-runner", port=3000, target_port=3000, node_port=30030),
             ],
             type="NodePort"
         )
@@ -102,46 +101,51 @@ def create_node_port_service(v1, namespace):
     try:
         v1.create_namespaced_service(namespace=namespace, body=service)
         print("- Service created.")
-        print("- Service is available at http://localhost:30080 for controlling and at http://localhost:30030 for testing.")
+        print("- Service is available at http://localhost:30080 for controlling and at http://127.0.0.1:30030/ for testing.")
     except:
         raise Exception("Service could not be started.")
 
 
-async def send_request(session):
-    url = "http://localhost:30030/transaction"
+def send_request(thread_id, i):
+    url = "http://127.0.0.1:30030/transaction"
     headers = {"Content-Type": "application/json"}
     data = {
-        "key": "first",
-        "value": 1
+        "key": f"key_{thread_id}_{i}",
+        "value": i
     }
     try:
-        async with session.post(url, data=json.dumps(data), headers=headers) as response:
-            print("Status:", response.status)
-            print("Data:", await response.text())
+        requests.post(url, data=json.dumps(data), headers=headers)
     except Exception as e:
-        print(f"Failed to send request: {str(e)}")
+        print(f"Thread-{i} | Failed to send request: {str(e)}")
 
+def thread_task(thread_id, n_requests):
+    for i in range(n_requests):
+        send_request(thread_id, i)
 
-async def request_sender(n):
-    async with aiohttp.ClientSession() as session:
-        tasks = [send_request(session) for _ in range(n)]
-        await asyncio.gather(*tasks)
-
-
-def run_diagnostic():
-    # Number of concurrent requests
-    n_requests = 10 
-    print("run it")
-    # send request on localhost:30080/start_test
+def start_server():
     url = 'http://localhost:30080/start'
     try:
         response = requests.get(url)
-        print("- ", response.text)
     except requests.RequestException as e:
         print(f"Failed to send request: {str(e)}")
 
-    # Run async function synchronously
-    asyncio.run(request_sender(n_requests))
+def run_diagnostic(n_threads=1, n_requests=100):
+    time.sleep(3)
+    start_server()
+    time.sleep(1)
+
+    start = time.time()
+    threads = []
+    for i in range(n_threads):
+        t = threading.Thread(target=thread_task, args=(i,n_requests))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+    end = time.time()
+
+    print(f"Finished {n_threads} threads with {n_requests} requests each in {end-start} seconds.")
+
 
 @app.command()
 def run():
@@ -175,7 +179,7 @@ def run():
 
                     create_node_port_service(v1, namespace)
 
-                    # run_diagnostic()
+                    run_diagnostic()
 
                 except KeyboardInterrupt:
                     print("Interrupted by user, shutting down")
@@ -183,8 +187,9 @@ def run():
                 except NamspaceException as e:
                     print(e)
 
-                # finally: 
-                #      destroy_namespace(v1, namespace)
+                finally: 
+                    progress.add_task(description="Tear down...", total=None)
+                    destroy_namespace(v1, namespace)
 
         
 
