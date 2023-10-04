@@ -114,7 +114,7 @@ def send_request(thread_id, i, n_transactions_per_request):
             "value": j
         })
     try:
-        requests.post(url, data=json.dumps(data), headers=headers)
+        res = requests.post(url, data=json.dumps(data), headers=headers)
     except Exception as e:
         print(f"Thread-{i} | Failed to send request: {str(e)}")
 
@@ -136,7 +136,7 @@ def stop_server():
     except requests.RequestException as e:
         print(f"Failed to send request: {str(e)}")
 
-def run_diagnostic(n_threads=6, n_requests=1000, n_transactions_per_request=1000):
+def run_diagnostic(n_threads, n_requests, n_transactions_per_request):
     time.sleep(3)
     start_server("NoBackup")
     time.sleep(2)
@@ -199,9 +199,9 @@ def show_cluster_info(v1):
 
 @app.command()
 def run(
-        n_threads: Annotated[str, typer.Argument(help="Number of thread of parallel request done")]=6, 
-        n_requests: Annotated[str, typer.Argument(help="Number of requests per thread")]=1000, 
-        n_transactions_per_request: Annotated[str, typer.Argument(help="Number of transactions per request")]=1000,
+        n_threads: Annotated[int, typer.Option(help="Number of thread of parallel request done")]=6, 
+        n_requests: Annotated[int, typer.Option(help="Number of requests per thread")]=1000, 
+        n_transactions_per_request: Annotated[int, typer.Option(help="Number of transactions per request")]=1000,
     ):
         """
         Run the test programm.
@@ -226,7 +226,9 @@ def run(
 
                     create_node_port_service(v1, namespace)
 
-                    run_diagnostic(int(n_threads), int(n_requests), int(n_transactions_per_request))
+                    print(n_threads, n_requests, n_transactions_per_request)
+
+                    run_diagnostic(n_threads, n_requests, n_transactions_per_request)
 
                 except KeyboardInterrupt:
                     print("Interrupted by user, shutting down")
