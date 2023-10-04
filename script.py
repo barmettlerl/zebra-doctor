@@ -226,8 +226,6 @@ def run(
 
                     create_node_port_service(v1, namespace)
 
-                    print(n_threads, n_requests, n_transactions_per_request)
-
                     run_diagnostic(n_threads, n_requests, n_transactions_per_request)
 
                 except KeyboardInterrupt:
