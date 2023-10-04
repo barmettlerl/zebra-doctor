@@ -10,8 +10,10 @@ struct Transaction{
     key: String,
     value: i32
 }
-
-
+#[derive(Deserialize)]
+struct TransactionRequest {
+    transactions: Vec<Transaction>
+}
 
 struct RunnerState {
     db: Database<String, i32>,
@@ -23,30 +25,34 @@ fn index() -> &'static str {
     "Hello, world!"
 }
 
-#[post("/transaction", data = "<transaction>")]
-fn transaction(transaction: Json<Transaction>, s: &State<RunnerState>) -> &'static str {
+#[post("/transaction", data = "<transaction_request>")]
+fn transaction(transaction_request: Json<TransactionRequest>, s: &State<RunnerState>) -> &'static str {
     if s.mode == TestMode::NoBackup {
-        transaction_no_backup(transaction, s)
+        transaction_no_backup(transaction_request, s)
     } else {
-        transaction_serialize_backup(transaction, s)
+        transaction_serialize_backup(transaction_request, s)
     }
 
-    "Transaction executed"
+    "Transactions executed"
 }
 
-fn transaction_no_backup(transaction: Json<Transaction>, s: &State<RunnerState>) {
+fn transaction_no_backup(transaction_request: Json<TransactionRequest>, s: &State<RunnerState>) {
 
     let table = s.db.get_table("test").unwrap();
     let mut modify = TableTransaction::new();
-    modify.set(transaction.0.key, transaction.0.value).unwrap();
+    for transaction in transaction_request.0.transactions.iter() {
+        modify.set(transaction.key.clone(), transaction.value).unwrap();
+    }
     table.execute(modify);
 }
 
-fn transaction_serialize_backup(transaction: Json<Transaction>, s: &State<RunnerState>) {
+fn transaction_serialize_backup(transaction_request: Json<TransactionRequest>, s: &State<RunnerState>) {
 
     let table = s.db.get_table("test").unwrap();
     let mut modify = TableTransaction::new();
-    modify.set(transaction.0.key, transaction.0.value).unwrap();
+    for transaction in transaction_request.0.transactions.iter() {
+        modify.set(transaction.key.clone(), transaction.value).unwrap();
+    }
     table.execute(modify);
 
     s.db.backup("./backup");

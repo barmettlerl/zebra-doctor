@@ -1,12 +1,10 @@
 import time
 import typer
-from asyncio import run
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from kubernetes import client, config
 from rich import print
 from rich.table import Table
 import requests
-import asyncio
 import threading
 import json
 
@@ -105,22 +103,23 @@ def create_node_port_service(v1, namespace):
     except:
         raise Exception("Service could not be started.")
 
-
-def send_request(thread_id, i):
+def send_request(thread_id, i, n_transactions_per_request):
     url = "http://127.0.0.1:30030/transaction"
     headers = {"Content-Type": "application/json"}
-    data = {
-        "key": f"key_{thread_id}_{i}",
-        "value": i
-    }
+    data = []
+    for j in range(n_transactions_per_request):
+        data.append({
+            "key": f"key_{thread_id}_{i}_{j}",
+            "value": j
+        })
     try:
         requests.post(url, data=json.dumps(data), headers=headers)
     except Exception as e:
         print(f"Thread-{i} | Failed to send request: {str(e)}")
 
-def thread_task(thread_id, n_requests):
+def thread_task(thread_id, n_requests, n_transactions_per_request):
     for i in range(n_requests):
-        send_request(thread_id, i)
+        send_request(thread_id, i, n_transactions_per_request)
 
 def start_server(test_mode):
     url = 'http://localhost:30080/start'
@@ -136,15 +135,15 @@ def stop_server():
     except requests.RequestException as e:
         print(f"Failed to send request: {str(e)}")
 
-def run_diagnostic(n_threads=1, n_requests=100):
+def run_diagnostic(n_threads=4, n_requests=100, n_transactions_per_request=10000):
     time.sleep(3)
     start_server("NoBackup")
-    time.sleep(1)
+    time.sleep(2)
 
     start = time.time()
     threads = []
     for i in range(n_threads):
-        t = threading.Thread(target=thread_task, args=(i,n_requests))
+        t = threading.Thread(target=thread_task, args=(i,n_requests, n_transactions_per_request))
         threads.append(t)
         t.start()
     for t in threads:
@@ -162,7 +161,7 @@ def run_diagnostic(n_threads=1, n_requests=100):
     start = time.time()
     threads = []
     for i in range(n_threads):
-        t = threading.Thread(target=thread_task, args=(i,n_requests))
+        t = threading.Thread(target=thread_task, args=(i,n_requests, n_transactions_per_request))
         threads.append(t)
         t.start()
     for t in threads:
@@ -174,12 +173,13 @@ def run_diagnostic(n_threads=1, n_requests=100):
     table = Table(title="Benchmarks")
 
     table.add_column("Test Mode", justify="right", style="cyan", no_wrap=True)
-    table.add_column("Number of requests", style="magenta")
+    table.add_column("# threads", style="magenta")
+    table.add_column("# requests", style="magenta")
+    table.add_column("# transactions per request", style="magenta")
     table.add_column("Time", justify="right", style="green")
 
-    
-    table.add_row("NoBackup", f"{n_requests}", f"{no_backup_time}s")
-    table.add_row("SerializeBackup", f"{n_requests}", f"{serialize_backup_time}s")       
+    table.add_row("NoBackup", f"{n_threads}", f"{n_requests}", f"{n_transactions_per_request}", f"{no_backup_time}s")
+    table.add_row("SerializeBackup", f"{n_threads}", f"{n_requests}", f"{n_transactions_per_request}", f"{serialize_backup_time}s")       
 
     print(table)
 
@@ -214,7 +214,7 @@ def run():
 
                     create_namespace(v1, namespace)
 
-                    create_pod(v1, namespace, "themaimu/zebra-doctor-node:0.2", "none")
+                    create_pod(v1, namespace, "themaimu/zebra-doctor-node:0.3", "none")
 
                     create_node_port_service(v1, namespace)
 
