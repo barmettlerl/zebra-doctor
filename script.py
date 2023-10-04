@@ -135,7 +135,7 @@ def stop_server():
     except requests.RequestException as e:
         print(f"Failed to send request: {str(e)}")
 
-def run_diagnostic(n_threads=4, n_requests=100, n_transactions_per_request=10000):
+def run_diagnostic(n_threads=6, n_requests=1000, n_transactions_per_request=1000):
     time.sleep(3)
     start_server("NoBackup")
     time.sleep(2)
