@@ -4,20 +4,11 @@ use rocket::serde::{Deserialize, json::Json};
 use std::process::Command;
 use rocket::State;
 
-// fn main() {
-//     dotenv().ok();
-//     println!("Hello, world!");
-//     let ignore_case = env::var("NODE_NAME").unwrap();
-//     println!("NODE_NAME: {}", ignore_case)
-
-// }
-
-
 #[macro_use] extern crate rocket;
 
-#[derive(Deserialize)]
-enum TestProgramm {
-    SingleClientSingleServer,
+#[derive(Deserialize, Debug)]
+struct StartProgramParams {
+    test_mode: node::TestMode,
 }
 
 struct ServerState {
@@ -31,9 +22,11 @@ fn index() -> &'static str {
     "Hello, world!"
 }
 
-#[get("/start")] 
-fn start(state: &State<ServerState>) -> &'static str {
+#[post("/start", data = "<test_programm>")] 
+fn start(test_programm: Json<StartProgramParams>, state: &State<ServerState>) -> &'static str {
+    print!("Starting server with test programm: {:?}", test_programm.0);
     *state.child.lock().unwrap() = Some(Command::new(state.database_runner_path.clone())
+    .args(["--test-programm", test_programm.0.test_mode.to_string().as_str()])
     .spawn()
     .expect("failed to execute child"));
 

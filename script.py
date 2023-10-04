@@ -122,16 +122,23 @@ def thread_task(thread_id, n_requests):
     for i in range(n_requests):
         send_request(thread_id, i)
 
-def start_server():
+def start_server(test_mode):
     url = 'http://localhost:30080/start'
     try:
-        response = requests.get(url)
+        requests.post(url, data=json.dumps({"test_mode": test_mode}), headers={"Content-Type": "application/json"})
+    except requests.RequestException as e:
+        print(f"Failed to send request: {str(e)}")
+
+def stop_server():
+    url = 'http://localhost:30080/stop'
+    try:
+        requests.get(url, headers={"Content-Type": "application/json"})
     except requests.RequestException as e:
         print(f"Failed to send request: {str(e)}")
 
 def run_diagnostic(n_threads=1, n_requests=100):
     time.sleep(3)
-    start_server()
+    start_server("NoBackup")
     time.sleep(1)
 
     start = time.time()
@@ -144,8 +151,50 @@ def run_diagnostic(n_threads=1, n_requests=100):
         t.join()
     end = time.time()
 
-    print(f"Finished {n_threads} threads with {n_requests} requests each in {end-start} seconds.")
+    no_backup_time = end-start
 
+    stop_server()
+
+    time.sleep(1)
+
+    start_server("SerializeBackup")
+
+    start = time.time()
+    threads = []
+    for i in range(n_threads):
+        t = threading.Thread(target=thread_task, args=(i,n_requests))
+        threads.append(t)
+        t.start()
+    for t in threads:
+        t.join()
+    end = time.time()
+
+    serialize_backup_time = end-start
+
+    table = Table(title="Benchmarks")
+
+    table.add_column("Test Mode", justify="right", style="cyan", no_wrap=True)
+    table.add_column("Number of requests", style="magenta")
+    table.add_column("Time", justify="right", style="green")
+
+    
+    table.add_row("NoBackup", f"{n_requests}", f"{no_backup_time}s")
+    table.add_row("SerializeBackup", f"{n_requests}", f"{serialize_backup_time}s")       
+
+    print(table)
+
+def show_cluster_info(v1):
+    nodes = v1.list_node()
+    table = Table(title="Nodes informations")
+
+    table.add_column("Name", justify="right", style="cyan", no_wrap=True)
+    table.add_column("CPU", style="magenta")
+    table.add_column("Memory", justify="right", style="green")
+
+    for node in nodes.items:
+        table.add_row(f"{node.metadata.name}", f"{node.status.capacity['cpu']}", f"{node.status.capacity['memory']}")
+                   
+    print(table)
 
 @app.command()
 def run():
@@ -161,21 +210,11 @@ def run():
                     config.load_kube_config()
                     v1 = client.CoreV1Api()
 
-                    nodes = v1.list_node()
-                    table = Table(title="Nodes informations")
-
-                    table.add_column("Name", justify="right", style="cyan", no_wrap=True)
-                    table.add_column("CPU", style="magenta")
-                    table.add_column("Memory", justify="right", style="green")
-
-                    for node in nodes.items:
-                        table.add_row(f"{node.metadata.name}", f"{node.status.capacity['cpu']}", f"{node.status.capacity['memory']}")
-                   
-                    print(table)
+                    show_cluster_info(v1)
 
                     create_namespace(v1, namespace)
 
-                    create_pod(v1, namespace, "themaimu/zebra-doctor-node:0.1", "none")
+                    create_pod(v1, namespace, "themaimu/zebra-doctor-node:0.2", "none")
 
                     create_node_port_service(v1, namespace)
 

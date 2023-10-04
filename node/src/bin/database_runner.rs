@@ -1,5 +1,5 @@
 use std::env;
-use dotenv::dotenv;
+use node::TestMode;
 use rocket::serde::{Deserialize, json::Json};
 use rocket::State;
 use zebra::database::{Database, TableTransaction};
@@ -11,20 +11,7 @@ struct Transaction{
     value: i32
 }
 
-#[derive(PartialEq, Eq)]
-enum TestMode {
-    NoBackup,
-    SerializeBackup
-}
 
-impl TestMode {
-    fn from_string(mode: String) -> TestMode {
-        match mode.as_str() {
-            "SerializeBackup" => TestMode::SerializeBackup,
-            _ => TestMode::NoBackup
-        }
-    }
-}
 
 struct RunnerState {
     db: Database<String, i32>,
@@ -67,9 +54,10 @@ fn transaction_serialize_backup(transaction: Json<Transaction>, s: &State<Runner
 
 #[launch]
 fn rocket() -> _ {
-    dotenv().ok();
-
-    let test_mode = TestMode::from_string(env::var("TEST_MODE").unwrap());
+    let args: Vec<_> = env::args().collect();
+    let test_programm = args[2].clone();
+    
+    let test_mode = TestMode::from_string(test_programm);
     let mut db = Database::<String, i32>::new();
 
     if test_mode == TestMode::SerializeBackup && std::path::Path::new("./backup").exists(){
