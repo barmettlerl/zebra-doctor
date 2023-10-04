@@ -1,4 +1,5 @@
 import time
+from typing import Annotated
 import typer
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from kubernetes import client, config
@@ -197,7 +198,14 @@ def show_cluster_info(v1):
     print(table)
 
 @app.command()
-def run():
+def run(
+        n_threads: Annotated[str, typer.Argument(help="Number of thread of parallel request done")]=6, 
+        n_requests: Annotated[str, typer.Argument(help="Number of requests per thread")]=1000, 
+        n_transactions_per_request: Annotated[str, typer.Argument(help="Number of transactions per request")]=1000,
+    ):
+        """
+        Run the test programm.
+        """
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -218,7 +226,7 @@ def run():
 
                     create_node_port_service(v1, namespace)
 
-                    run_diagnostic()
+                    run_diagnostic(n_threads, n_requests, n_transactions_per_request)
 
                 except KeyboardInterrupt:
                     print("Interrupted by user, shutting down")
