@@ -179,8 +179,8 @@ def run_diagnostic(n_threads=6, n_requests=1000, n_transactions_per_request=1000
     table.add_column("# transactions per request", style="magenta")
     table.add_column("Time", justify="right", style="green")
 
-    table.add_row("NoBackup", f"{n_threads}", f"{n_requests}", f"{n_transactions_per_request}", f"{no_backup_time}s")
-    table.add_row("SerializeBackup", f"{n_threads}", f"{n_requests}", f"{n_transactions_per_request}", f"{serialize_backup_time}s")       
+    table.add_row("NoBackup", f"{n_threads}", f"{n_requests}", f"{n_transactions_per_request}", "{:.3f}".format(no_backup_time))
+    table.add_row("SerializeBackup", f"{n_threads}", f"{n_requests}", f"{n_transactions_per_request}", "{:.3f}".format(serialize_backup_time))       
 
     print(table)
 
@@ -226,7 +226,7 @@ def run(
 
                     create_node_port_service(v1, namespace)
 
-                    run_diagnostic(n_threads, n_requests, n_transactions_per_request)
+                    run_diagnostic(int(n_threads), int(n_requests), int(n_transactions_per_request))
 
                 except KeyboardInterrupt:
                     print("Interrupted by user, shutting down")
