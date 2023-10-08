@@ -55,7 +55,10 @@ fn transaction_serialize_backup(transaction_request: Json<TransactionRequest>, s
     }
     table.execute(modify);
 
-    s.db.backup("./backup");
+
+    
+
+    
 }
 
 #[launch]

@@ -226,6 +226,8 @@ def run(
 
                     create_node_port_service(v1, namespace)
 
+                    progress.add_task(description="Run diagnostics...", total=None)
+
                     run_diagnostic(n_threads, n_requests, n_transactions_per_request)
 
                 except KeyboardInterrupt:
