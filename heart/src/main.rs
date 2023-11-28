@@ -2,8 +2,8 @@ use std::env;
 use std::collections::HashMap;
 use std::time::Instant;
 
-use tenacious_zebra::database::{TableTransaction, Database, Table};
-
+use tenaciouszebra_singe_rocksdb::database::{TableTransaction, Database};
+use tenaciouszebra_file_store::database::{TableTransaction as FileStoreTableTransaction, Database as FileStoreDatabase};
 use crate::helpers::with_percentage_true;
 
 mod commands;
@@ -29,73 +29,80 @@ fn get_backup_type(args: &Vec<String>) -> String {
     String::from("none")
 }
 
-fn run_no_backup_test(write_percentage: f64) {
-    let db = Database::<String, i32>::new();
-    let mut test_table = db.empty_table("test");
-
-    let start = Instant::now();
-    for i in 0..100 {
-        let mut modify = TableTransaction::new();
-
-        for j in 0..1000 {
-            if with_percentage_true(write_percentage) {
-                modify.set(format!("{}{}", i, j), j).unwrap();
-            } else {
-                modify.get(&format!("{}{}", i, j)).unwrap();
-            }
-        }
-        test_table.execute(modify);
-    }
-
-    let duration = start.elapsed();
-
-    println!("Time elapsed in run_no_backup_test() is: {:?} with write percentage: {}", duration, write_percentage);
-
+fn write_to_csv(results: Vec<(u128, i32, usize, usize)>, file_name: &str) {
+    let mut wtr = csv::Writer::from_path(file_name).unwrap();
+    for (duration, write_percentage, transaction_size, transaction_count) in results {
+        wtr.serialize((duration, write_percentage, transaction_size, transaction_count)).unwrap();
+    }    
+    wtr.flush().unwrap();
 }
 
-fn run_file_save_backup_test(write_percentage: f64) {
-    let mut db = Database::<String, i32>::new();
+fn run_single_rocksdb_test(write_percentage: i32, transaction_size: usize, transaction_count: usize) -> u128 {
+    let path = "test";
+    let mut db = Database::<String, usize>::new(path);
     db.empty_table("test");
 
-    db.backup("./backup");
-
-    let start: Instant = Instant::now();
-    for i in 0..100 {
-        db = Database::restore("./backup");
-        let test_table = db.get_table("test").unwrap();
+    let mut transactions = Vec::<TableTransaction<String, usize>>::new();
+    for i in 0..transaction_count {
         let mut modify = TableTransaction::new();
-        for j in 0..1000 {
+        for j in 0..transaction_size {
             if with_percentage_true(write_percentage) {
                 modify.set(format!("{}{}", i, j), j).unwrap();
             } else {
                 modify.get(&format!("{}{}", i, j)).unwrap();
             }
         }
-        test_table.execute(modify);
-        db.backup("./backup");
+        transactions.push(modify);
+    }
+    let test_table = db.get_table("test").unwrap();
+
+    let start: Instant = Instant::now();
+
+    for transaction in transactions {
+        test_table.execute(transaction);
     }
 
     let duration = start.elapsed();
 
-    println!("Time elapsed in run_file_save_backup_test() is: {:?} with write percentage: {}", duration, write_percentage);
+    std::fs::remove_dir_all(path).unwrap();
+
+    println!("Time elapsed  {:?}, write percentage: {}, transaction_size {}, transaction_count {}", duration, write_percentage, transaction_size, transaction_count);
+    duration.as_millis()
 }
 
-fn run_hash_table_operations(write_percentage: f64) {
-    let mut db = HashMap::<String, i32>::new();
-    db.insert(String::from("1"), 1);
-    let start: Instant = Instant::now();
-    for i in 0..100 {
-        for j in 0..1000 {
-            if with_percentage_true(write_percentage) {
-                db.insert(format!("{}{}", i, j), j);
-            } else {
-                db.get(&"1".to_string());
-            }
-        }
-    }
-    let duration = start.elapsed();
 
-    println!("Time elapsed in run_hash_table_operations() is: {:?} with write percentage: {}", duration, write_percentage);
+fn run_write_percentage_single_rocksdb() {
+    println!("Running run_write_percentage_single_rocksdb with dynamic write percentage");
+
+    let mut results = Vec::<(u128, i32, usize, usize)>::new();
+    for write_percentage in (0..100).step_by(10)  {
+            results.push((run_single_rocksdb_test(write_percentage, 10000, 100), 
+            write_percentage,
+            10000,
+            100
+        ));
+    }
+
+    write_to_csv(results, "run_write_percentage_single_rocksdb.csv");
+}
+
+fn run_transaction_size_single_rocksdb() {
+    println!("Running run_write_percentage_single_rocksdb with dynamic transaction size");
+
+    const NUMBER_OF_OPERATIONS_POWER: u32 = 7;
+
+    let mut results = Vec::<(u128, i32, usize, usize)>::new();
+    for i in 2..NUMBER_OF_OPERATIONS_POWER  {
+            results.push((
+                run_single_rocksdb_test(10, usize::pow(10,i), 
+                usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)), i as i32,
+                usize::pow(10,i),
+                usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)
+            )
+            );
+    }
+
+    write_to_csv(results, "run_transaction_size_single_rocksdb.csv");
 }
 
 fn main() {
@@ -104,14 +111,8 @@ fn main() {
     let test_method = get_test_method(&args);
     let backup_type = get_backup_type(&args);
 
-
-    run_no_backup_test(50.0);
-    run_no_backup_test(100.0);
-    run_file_save_backup_test(50.0);
-    run_file_save_backup_test(100.0);
-    run_hash_table_operations(50.0);
-    run_hash_table_operations(100.0);
+    run_write_percentage_single_rocksdb();
+    run_transaction_size_single_rocksdb();
+ 
     
-
-    println!("Hello, world!");
 }

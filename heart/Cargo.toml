@@ -6,5 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tenacious-zebra = { git = "https://github.com/barmettlerl/tenacious-zebra.git" }
+tenaciouszebra-singe-rocksdb = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/single-rocksdb" }
+tenaciouszebra-file-store = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "main" }
+
 rand = "0.8.5"
+dashmap = "5.5.3"
+csv = "1.3.0"
