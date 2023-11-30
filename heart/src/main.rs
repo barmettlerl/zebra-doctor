@@ -88,7 +88,7 @@ fn run_no_backup_test(write_percentage: i32, transaction_size: usize, transactio
         }
         transactions.push(modify);
     }
-    let test_table = db.get_table("test").unwrap();
+    let test_table = db.empty_table("test");
 
     let start: Instant = Instant::now();
 
