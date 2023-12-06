@@ -31,7 +31,8 @@ fn get_backup_type(args: &Vec<String>) -> String {
 }
 
 fn write_to_csv(results: Vec<(u128, i32, usize, usize)>, file_name: &str) {
-    let mut wtr = csv::Writer::from_path(file_name).unwrap();
+    std::fs::create_dir_all("results").unwrap();
+    let mut wtr = csv::Writer::from_path(format!("results/{}", file_name)).unwrap();
     for (duration, write_percentage, transaction_size, transaction_count) in results {
         wtr.serialize((duration, write_percentage, transaction_size, transaction_count)).unwrap();
     }    
@@ -46,11 +47,12 @@ fn run_single_rocksdb_test(write_percentage: i32, transaction_size: usize, trans
     let mut transactions = Vec::<TableTransaction<String, usize>>::new();
     for i in 0..transaction_count {
         let mut modify = TableTransaction::new();
+        modify.set(String::from("first"), i).unwrap();
         for j in 0..transaction_size {
             if with_percentage_true(write_percentage) {
                 modify.set(format!("{}{}", i, j), j).unwrap();
             } else {
-                modify.get(format!("{}{}", i, j)).unwrap();
+                modify.get(String::from("first")).unwrap();
             }
         }
         transactions.push(modify);
@@ -79,11 +81,12 @@ fn run_no_backup_test(write_percentage: i32, transaction_size: usize, transactio
 
     for i in 0..transaction_count {
         let mut modify = FileStoreTableTransaction::new();
+        modify.set(String::from("first"), i).unwrap();
         for j in 0..transaction_size {
             if with_percentage_true(write_percentage) {
                 modify.set(format!("{}{}", i, j), j).unwrap();
             } else {
-                modify.get(&format!("{}{}", i, j)).unwrap();
+                modify.get(&String::from("first")).unwrap();
             }
         }
         transactions.push(modify);
@@ -109,11 +112,12 @@ fn run_no_backup_dashmap_test(write_percentage: i32, transaction_size: usize, tr
 
     for i in 0..transaction_count {
         let mut modify = DashMapTableTransaction::new();
+        modify.set(String::from("first"), i).unwrap();
         for j in 0..transaction_size {
             if with_percentage_true(write_percentage) {
                 modify.set(format!("{}{}", i, j), j).unwrap();
             } else {
-                modify.get(&format!("{}{}", i, j)).unwrap();
+                modify.get(&String::from("first")).unwrap();
             }
         }
         transactions.push(modify);
@@ -141,11 +145,12 @@ fn run_file_backup_test(write_percentage: i32, transaction_size: usize, transact
 
     for i in 0..transaction_count {
         let mut modify = FileStoreTableTransaction::new();
+        modify.set(String::from("first"), i).unwrap();
         for j in 0..transaction_size {
             if with_percentage_true(write_percentage) {
                 modify.set(format!("{}{}", i, j), j).unwrap();
             } else {
-                modify.get(&format!("{}{}", i, j)).unwrap();
+                modify.get(&String::from("first")).unwrap();
             }
         }
         db = FileStoreDatabase::restore("./backup");
@@ -176,6 +181,27 @@ fn run_write_percentage_single_rocksdb() {
     write_to_csv(results, "run_write_percentage_single_rocksdb.csv");
 }
 
+
+fn run_transaction_size_no_backup() {
+    println!("Running run_transaction_size_no_backup with dynamic transaction size");
+
+    const NUMBER_OF_OPERATIONS_POWER: u32 = 7;
+
+    let mut results = Vec::<(u128, i32, usize, usize)>::new();
+    for i in 2..NUMBER_OF_OPERATIONS_POWER  {
+            results.push((
+                run_no_backup_test(10, usize::pow(10,i), 
+                usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)), 
+                10,
+                usize::pow(10,i),
+                usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)
+            )
+            );
+    }
+
+    write_to_csv(results, "run_transaction_size_no_backup.csv");
+}
+
 fn run_write_percentage_no_backup() {
     println!("Running run_write_percentage_no_backup with dynamic write percentage");
 
@@ -200,7 +226,8 @@ fn run_write_percentage_no_backup_dashmap() {
     for i in 2..NUMBER_OF_OPERATIONS_POWER  {
             results.push((
                 run_no_backup_dashmap_test(10, usize::pow(10,i), 
-                usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)), i as i32,
+                usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)), 
+                10,
                 usize::pow(10,i),
                 usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)
             )
@@ -234,7 +261,8 @@ fn run_transaction_size_single_rocksdb() {
     for i in 2..NUMBER_OF_OPERATIONS_POWER  {
             results.push((
                 run_single_rocksdb_test(10, usize::pow(10,i), 
-                usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)), i as i32,
+                usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)), 
+                10,
                 usize::pow(10,i),
                 usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i)
             )
@@ -253,8 +281,8 @@ fn main() {
 
     run_write_percentage_single_rocksdb();
     run_transaction_size_single_rocksdb();
+    run_transaction_size_no_backup();
     run_write_percentage_no_backup();
     run_write_percentage_with_file_backup();
     run_write_percentage_no_backup_dashmap();
-    
 }

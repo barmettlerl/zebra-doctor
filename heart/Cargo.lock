@@ -579,6 +579,7 @@ dependencies = [
  "csv",
  "dashmap",
  "rand 0.8.5",
+ "rocksdb",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/single-rocksdb)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/use-dashmap)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=main)",
