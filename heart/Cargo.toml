@@ -9,6 +9,7 @@ edition = "2021"
 tenaciouszebra-singe-rocksdb = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/single-rocksdb" }
 tenaciouszebra-file-store = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "main" }
 tenaciouszebra-dashmap = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/use-dashmap" }
+tenaciouszebra-okaywal = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/add-okaywal" }
 rand = "0.8.5"
 dashmap = "5.5.3"
 csv = "1.3.0"

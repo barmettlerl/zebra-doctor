@@ -1,6 +1,5 @@
-use std::time::Instant;
-use helpers::{create_percentage_test, create_transaction_size_test};
-use sysinfo::{System, SystemExt, CpuExt};
+use std::{time::Instant, sync::mpsc::Sender};
+use helpers::{create_percentage_test, create_transaction_size_test, CPUStatsCommand};
 
 use tenaciouszebra_dashmap::database::{
     Database as DashMapDatabase, TableTransaction as DashMapTableTransaction,
@@ -9,6 +8,8 @@ use tenaciouszebra_file_store::database::{
     Database as FileStoreDatabase, TableTransaction as FileStoreTableTransaction,
 };
 use tenaciouszebra_singe_rocksdb::database::{Database, TableTransaction};
+
+use tenaciouszebra_okaywal::database::{Database as OkayWalDatabase, TableTransaction as OkayWalTableTransaction};
 
 use crate::helpers::with_percentage_true;
 
@@ -38,6 +39,7 @@ fn run_single_rocksdb_test(
     write_percentage: i32,
     transaction_size: usize,
     transaction_count: usize,
+    tx: &Sender<CPUStatsCommand>,
 ) -> u128 {
     let path = "test";
     let db = Database::<String, usize>::new(path);
@@ -66,6 +68,7 @@ fn run_single_rocksdb_test(
         transactions.push(modify);
     }
 
+    tx.send(CPUStatsCommand::Start).unwrap();
     let start: Instant = Instant::now();
 
     for transaction in transactions {
@@ -73,6 +76,7 @@ fn run_single_rocksdb_test(
     }
 
     let duration = start.elapsed();
+    tx.send(CPUStatsCommand::Stop).unwrap();
 
     std::fs::remove_dir_all(path).unwrap();
 
@@ -87,12 +91,14 @@ fn run_rocksdb_test(
     write_percentage: i32,
     transaction_size: usize,
     transaction_count: usize,
+    tx: &Sender<CPUStatsCommand>,
 ) -> u128 {
     let path = "test";
     let db = rocksdb::DB::open_default(path).unwrap();
 
     db.put("first", "1").unwrap();
 
+    tx.send(CPUStatsCommand::Start).unwrap();
     let start: Instant = Instant::now();
 
     for i in 0..transaction_count {
@@ -106,6 +112,7 @@ fn run_rocksdb_test(
     }
 
     let duration: std::time::Duration = start.elapsed();
+    tx.send(CPUStatsCommand::Stop).unwrap();
 
     std::fs::remove_dir_all(path).unwrap();
 
@@ -120,6 +127,7 @@ fn run_no_backup_test(
     write_percentage: i32,
     transaction_size: usize,
     transaction_count: usize,
+    tx: &Sender<CPUStatsCommand>,
 ) -> u128 {
     let db = FileStoreDatabase::<String, usize>::new();
     let test_table: std::sync::Arc<tenaciouszebra_file_store::database::Table<String, usize>> = db.empty_table("test");
@@ -146,6 +154,7 @@ fn run_no_backup_test(
         transactions.push(modify);
     }
 
+    tx.send(CPUStatsCommand::Start).unwrap();
     let start: Instant = Instant::now();
 
     for transaction in transactions {
@@ -153,6 +162,60 @@ fn run_no_backup_test(
     }
 
     let duration = start.elapsed();
+    tx.send(CPUStatsCommand::Stop).unwrap();
+
+    println!(
+        "Time elapsed  {:?}, write percentage: {}, transaction_size {}, transaction_count {}",
+        duration, write_percentage, transaction_size, transaction_count
+    );
+    duration.as_millis()
+}
+
+
+fn run_okaywal_test(
+    write_percentage: i32,
+    transaction_size: usize,
+    transaction_count: usize,
+    tx: &Sender<CPUStatsCommand>,
+) -> u128 {
+    let path = "test";
+    let db = OkayWalDatabase::<String, usize>::new(path);
+    let test_table = db.empty_table("test");
+
+    let mut first_transaction = OkayWalTableTransaction::new();
+    for i in 0..transaction_size {
+        first_transaction.set(format!("first {}", i), i).unwrap();
+    }
+    test_table.execute(first_transaction);
+
+    let mut transactions = Vec::<OkayWalTableTransaction<String, usize>>::new();
+
+    let mut get_count = 0;
+
+    for i in 0..transaction_count {
+        let mut modify = OkayWalTableTransaction::new();
+        for j in 0..transaction_size {
+            if with_percentage_true(write_percentage) {
+                modify.set(format!("{}{}", i, j), j).unwrap();
+            } else {
+                modify.get(&format!("first {}", get_count)).unwrap();
+                get_count += 1;
+            }
+        }
+        transactions.push(modify);
+    }
+
+    tx.send(CPUStatsCommand::Start).unwrap();
+    let start: Instant = Instant::now();
+
+    for transaction in transactions {
+        test_table.execute(transaction);
+    }
+
+    let duration = start.elapsed();
+    tx.send(CPUStatsCommand::Stop).unwrap();
+
+    std::fs::remove_dir_all(path).unwrap();
 
     println!(
         "Time elapsed  {:?}, write percentage: {}, transaction_size {}, transaction_count {}",
@@ -165,6 +228,7 @@ fn run_no_backup_dashmap_test(
     write_percentage: i32,
     transaction_size: usize,
     transaction_count: usize,
+    tx: &Sender<CPUStatsCommand>,
 ) -> u128 {
     let db = DashMapDatabase::<String, usize>::new();
     let mut test_table = db.empty_table();
@@ -190,6 +254,7 @@ fn run_no_backup_dashmap_test(
         transactions.push(modify);
     }
 
+    tx.send(CPUStatsCommand::Start).unwrap();
     let start: Instant = Instant::now();
 
     for transaction in transactions {
@@ -197,6 +262,7 @@ fn run_no_backup_dashmap_test(
     }
 
     let duration = start.elapsed();
+    tx.send(CPUStatsCommand::Stop).unwrap();
 
     println!(
         "Time elapsed  {:?}, write percentage: {}, transaction_size {}, transaction_count {}",
@@ -209,6 +275,7 @@ fn run_file_backup_test(
     write_percentage: i32,
     transaction_size: usize,
     transaction_count: usize,
+    tx: &Sender<CPUStatsCommand>,
 ) -> u128 {
     let mut db = FileStoreDatabase::<String, usize>::new();
     db.empty_table("test");
@@ -223,6 +290,7 @@ fn run_file_backup_test(
 
     let mut get_counter = 0;
 
+    tx.send(CPUStatsCommand::Start).unwrap();
     let start: Instant = Instant::now();
 
     for i in 0..transaction_count {
@@ -243,6 +311,7 @@ fn run_file_backup_test(
     }
 
     let duration = start.elapsed();
+    tx.send(CPUStatsCommand::Stop).unwrap();
 
     std::fs::remove_dir_all("./backup").unwrap();
     println!(

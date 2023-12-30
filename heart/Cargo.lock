@@ -285,6 +285,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "crc32c"
+version = "0.6.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d8f48d60e5b4d2c53d5c2b1d8a58c849a70ae5e5509b08a48d047e3b65714a74"
+dependencies = [
+ "rustc_version",
+]
+
+[[package]]
 name = "crossbeam-deque"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -438,6 +447,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "flume"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55ac459de2512911e4b674ce33cf20befaba382d05b62b008afc1c8b57cbf181"
+dependencies = [
+ "futures-core",
+ "futures-sink",
+ "nanorand",
+ "spin",
+]
+
+[[package]]
 name = "futures"
 version = "0.3.29"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -587,6 +608,7 @@ dependencies = [
  "rand 0.8.5",
  "rocksdb",
  "sysinfo",
+ "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/add-okaywal)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/single-rocksdb)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/use-dashmap)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=main)",
@@ -851,6 +873,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "okaywal"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4df83a1e0b8db61fca8be93470edf2829d28988917abbe17170fd813cdd0331d"
+dependencies = [
+ "crc32c",
+ "flume 0.11.0",
+ "parking_lot 0.12.1",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.18.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -871,6 +904,16 @@ dependencies = [
  "instant",
  "lock_api",
  "parking_lot_core 0.8.6",
+]
+
+[[package]]
+name = "parking_lot"
+version = "0.12.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3742b2c103b9f06bc9fff0a37ff4912935851bee6d36f3c02bcc755bcfec228f"
+dependencies = [
+ "lock_api",
+ "parking_lot_core 0.9.9",
 ]
 
 [[package]]
@@ -1150,6 +1193,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
+name = "rustc_version"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bfa0f585226d2e68097d4f95d113b15b83a82e819ab25717ec0590d9584ef366"
+dependencies = [
+ "semver",
+]
+
+[[package]]
 name = "ryu"
 version = "1.0.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1160,6 +1212,12 @@ name = "scopeguard"
 version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
+
+[[package]]
+name = "semver"
+version = "1.0.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "836fa6a3e1e547f9a2c4040802ec865b5d85f4014efe00555d7090a3dcaa1090"
 
 [[package]]
 name = "serde"
@@ -1306,6 +1364,31 @@ dependencies = [
 [[package]]
 name = "talk"
 version = "0.1.0"
+source = "git+https://github.com/barmettlerl/talk?rev=eabe07edda93dd3de97792473630ebd1b588d7b2#eabe07edda93dd3de97792473630ebd1b588d7b2"
+dependencies = [
+ "async-trait",
+ "atomic-counter",
+ "bincode",
+ "blake3",
+ "blst",
+ "chacha20poly1305",
+ "doomstack",
+ "ed25519-dalek",
+ "flume 0.10.14",
+ "futures",
+ "nix",
+ "parking_lot 0.11.2",
+ "rand 0.7.3",
+ "rayon",
+ "serde",
+ "socket2",
+ "tokio",
+ "x25519-dalek",
+]
+
+[[package]]
+name = "talk"
+version = "0.1.0"
 source = "git+https://github.com/barmettlerl/talk#b8d83c330404e3523e7cd2bef70a89d44fceecae"
 dependencies = [
  "async-trait",
@@ -1316,16 +1399,33 @@ dependencies = [
  "chacha20poly1305",
  "doomstack",
  "ed25519-dalek",
- "flume",
+ "flume 0.10.14",
  "futures",
  "nix",
- "parking_lot",
+ "parking_lot 0.11.2",
  "rand 0.7.3",
  "rayon",
  "serde",
  "socket2",
  "tokio",
  "x25519-dalek",
+]
+
+[[package]]
+name = "tenaciouszebra"
+version = "0.1.0"
+source = "git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/add-okaywal#d9be69b32d7fbbf01d27d8128ef734d69ee92996"
+dependencies = [
+ "bincode",
+ "bit-vec",
+ "doomstack",
+ "oh-snap",
+ "okaywal",
+ "rayon",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+ "talk 0.1.0 (git+https://github.com/barmettlerl/talk?rev=eabe07edda93dd3de97792473630ebd1b588d7b2)",
 ]
 
 [[package]]
@@ -1342,7 +1442,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
- "talk",
+ "talk 0.1.0 (git+https://github.com/barmettlerl/talk)",
 ]
 
 [[package]]
@@ -1358,7 +1458,7 @@ dependencies = [
  "rayon",
  "serde",
  "serde_bytes",
- "talk",
+ "talk 0.1.0 (git+https://github.com/barmettlerl/talk)",
 ]
 
 [[package]]
@@ -1374,7 +1474,7 @@ dependencies = [
  "serde",
  "serde_bytes",
  "serde_json",
- "talk",
+ "talk 0.1.0 (git+https://github.com/barmettlerl/talk)",
 ]
 
 [[package]]
