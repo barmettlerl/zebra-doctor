@@ -6,10 +6,12 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tenaciouszebra-singe-rocksdb = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/single-rocksdb" }
+tenaciouszebra-rocksdb-wal = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/rocksdb-wal" }
 tenaciouszebra-file-store = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "main" }
-tenaciouszebra-dashmap = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/use-dashmap" }
+tenaciouszebra-dashmap = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/dashmap" }
 tenaciouszebra-okaywal = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/add-okaywal" }
+tenaciouszebra-single-rocksdb = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/single-rocksdb" }
+
 rand = "0.8.5"
 dashmap = "5.5.3"
 csv = "1.3.0"

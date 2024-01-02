@@ -92,13 +92,13 @@ pub fn create_transaction_size_test(
     function_under_test: fn(i32, usize, usize, &Sender<CPUStatsCommand>) -> u128,
     file_name: &str,
 ) {
-    const NUMBER_OF_OPERATIONS_POWER: u32 = 8;
+    const NUMBER_OF_OPERATIONS_POWER: u32 = 7;
 
     println!("Running transaction size test with fn {}", file_name);
     let (tx, rx) = mpsc::channel();
     thread::spawn(read_and_store_cpu_stats(rx, file_name.to_string()));
     let mut results = Vec::<(u128, i32, usize, usize)>::new();
-    for i in 2..NUMBER_OF_OPERATIONS_POWER {
+    for i in 1..NUMBER_OF_OPERATIONS_POWER {
         results.push((
             function_under_test(
                 10,

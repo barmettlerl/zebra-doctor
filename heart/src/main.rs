@@ -7,9 +7,11 @@ use tenaciouszebra_dashmap::database::{
 use tenaciouszebra_file_store::database::{
     Database as FileStoreDatabase, TableTransaction as FileStoreTableTransaction,
 };
-use tenaciouszebra_singe_rocksdb::database::{Database, TableTransaction};
+use tenaciouszebra_rocksdb_wal::database::{Database, TableTransaction};
 
 use tenaciouszebra_okaywal::database::{Database as OkayWalDatabase, TableTransaction as OkayWalTableTransaction};
+
+use tenaciouszebra_single_rocksdb::database::{Database as SingleRocksdbDatabase, TableTransaction as SingleRocksdbTableTransaction};
 
 use crate::helpers::with_percentage_true;
 
@@ -35,7 +37,7 @@ fn get_backup_type(args: &Vec<String>) -> String {
 }
 
 
-fn run_single_rocksdb_test(
+fn run_rocksdb_wal_test(
     write_percentage: i32,
     transaction_size: usize,
     transaction_count: usize,
@@ -75,7 +77,7 @@ fn run_single_rocksdb_test(
         test_table.execute(transaction);
     }
 
-    let duration = start.elapsed();
+    let duration: std::time::Duration = start.elapsed();
     tx.send(CPUStatsCommand::Stop).unwrap();
 
     std::fs::remove_dir_all(path).unwrap();
@@ -321,6 +323,58 @@ fn run_file_backup_test(
     duration.as_millis()
 }
 
+fn run_single_rocksdb_backup_test(
+    write_percentage: i32,
+    transaction_size: usize,
+    transaction_count: usize,
+    tx: &Sender<CPUStatsCommand>,
+) -> u128 {
+    let path = "test";
+    let db = SingleRocksdbDatabase::<String, usize>::new(path);
+    let test_table = db.empty_table("test");
+
+    let mut first_transaction = SingleRocksdbTableTransaction::new();
+    for i in 0..transaction_size {
+        first_transaction.set(format!("first {}", i), i).unwrap();
+    }
+    test_table.execute(first_transaction);
+
+    let mut transactions: Vec<SingleRocksdbTableTransaction<String, usize>> = Vec::<SingleRocksdbTableTransaction<String, usize>>::new();
+
+    let mut get_count = 0;
+
+    for i in 0..transaction_count {
+        let mut modify = SingleRocksdbTableTransaction::new();
+        for j in 0..transaction_size {
+            if with_percentage_true(write_percentage) {
+                modify.set(format!("{}{}", i, j), j).unwrap();
+            } else {
+                modify.get(&format!("first {}", get_count)).unwrap();
+                get_count += 1;
+            }
+        }
+        transactions.push(modify);
+    }
+
+    tx.send(CPUStatsCommand::Start).unwrap();
+    let start: Instant = Instant::now();
+
+    for transaction in transactions {
+        test_table.execute(transaction);
+    }
+
+    let duration = start.elapsed();
+    tx.send(CPUStatsCommand::Stop).unwrap();
+
+    std::fs::remove_dir_all(path).unwrap();
+
+    println!(
+        "Time elapsed  {:?}, write percentage: {}, transaction_size {}, transaction_count {}",
+        duration, write_percentage, transaction_size, transaction_count
+    );
+    duration.as_millis()
+}
+
 fn main() {
     // let args: Vec<String> = env::args().collect();
 
@@ -330,7 +384,7 @@ fn main() {
     std::fs::create_dir_all("results").unwrap();
 
 
-    create_percentage_test(run_single_rocksdb_test, "write_percentage_single_rocksdb");
+    create_percentage_test(run_rocksdb_wal_test, "write_percentage_rocksdb_wal");
     create_percentage_test(run_no_backup_test, "write_percentage_no_backup");
     create_percentage_test(run_file_backup_test, "write_percentage_with_file_backup");
     create_percentage_test(
@@ -338,8 +392,11 @@ fn main() {
         "write_percentage_no_backup_dashmap",
     );
     create_percentage_test(run_rocksdb_test, "write_percentage_rocksdb");
+    create_percentage_test(run_okaywal_test, "write_percentage_okaywal");
+    create_percentage_test(run_single_rocksdb_backup_test, "write_percentage_single_rocksdb");
 
-    create_transaction_size_test(run_single_rocksdb_test, "transaction_size_single_rocksdb");
+
+    create_transaction_size_test(run_rocksdb_wal_test, "write_percentage_rocksdb_wal");
     create_transaction_size_test(run_no_backup_test, "transaction_size_no_backup");
     create_transaction_size_test(run_file_backup_test, "transaction_size_with_file_backup");
     create_transaction_size_test(
@@ -347,5 +404,7 @@ fn main() {
         "transaction_size_no_backup_dashmap",
     );
     create_transaction_size_test(run_rocksdb_test, "transaction_size_rocksdb");
+    create_transaction_size_test(run_okaywal_test, "transaction_size_okaywal");
+    create_transaction_size_test(run_single_rocksdb_backup_test, "transaction_size_single_rocksdb");
 
 }
