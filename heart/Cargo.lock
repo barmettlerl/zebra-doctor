@@ -608,6 +608,7 @@ dependencies = [
  "sysinfo",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/add-okaywal)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/dashmap)",
+ "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/pickel-db)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/rocksdb-wal)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/single-rocksdb)",
  "tenaciouszebra 0.1.0 (git+https://github.com/barmettlerl/tenacious-zebra.git?branch=main)",
@@ -938,6 +939,16 @@ name = "peeking_take_while"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "19b17cddbe7ec3f8bc800887bab5e717348c95ea2ca0b1bf0837fb964dc67099"
+
+[[package]]
+name = "pickledb"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c53a5ade47760e8cc4986bdc5e72daeffaaaee64cbc374f9cfe0a00c1cd87b1f"
+dependencies = [
+ "serde",
+ "serde_json",
+]
 
 [[package]]
 name = "pin-project"
@@ -1431,6 +1442,23 @@ dependencies = [
  "rayon",
  "serde",
  "serde_bytes",
+ "talk 0.1.0 (git+https://github.com/barmettlerl/talk)",
+]
+
+[[package]]
+name = "tenaciouszebra"
+version = "0.1.0"
+source = "git+https://github.com/barmettlerl/tenacious-zebra.git?branch=feature/pickel-db#129ccf207ce628a5a8a66dc1d013c24623342d95"
+dependencies = [
+ "bincode",
+ "bit-vec",
+ "doomstack",
+ "oh-snap",
+ "pickledb",
+ "rayon",
+ "serde",
+ "serde_bytes",
+ "serde_json",
  "talk 0.1.0 (git+https://github.com/barmettlerl/talk)",
 ]
 

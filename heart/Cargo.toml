@@ -11,6 +11,7 @@ tenaciouszebra-file-store = { package="tenaciouszebra", git = "https://github.co
 tenaciouszebra-dashmap = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/dashmap" }
 tenaciouszebra-okaywal = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/add-okaywal" }
 tenaciouszebra-single-rocksdb = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch = "feature/single-rocksdb" }
+tenaciouszebra-pickledb = { package="tenaciouszebra", git = "https://github.com/barmettlerl/tenacious-zebra.git", branch="feature/pickel-db" }
 
 rand = "0.8.5"
 dashmap = "5.5.3"

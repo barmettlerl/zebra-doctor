@@ -77,9 +77,9 @@ pub fn create_percentage_test(function_under_test: fn(i32, usize, usize, &Sender
     let mut results = Vec::<(u128, i32, usize, usize)>::new();
     for write_percentage in (0..100).step_by(10) {
         results.push((
-            function_under_test(write_percentage, 10000, 100, &tx),
+            function_under_test(write_percentage, 100000, 100, &tx),
             write_percentage,
-            10000,
+            100000,
             100,
         ));
     }
@@ -98,7 +98,7 @@ pub fn create_transaction_size_test(
     let (tx, rx) = mpsc::channel();
     thread::spawn(read_and_store_cpu_stats(rx, file_name.to_string()));
     let mut results = Vec::<(u128, i32, usize, usize)>::new();
-    for i in 1..NUMBER_OF_OPERATIONS_POWER {
+    for i in 2..NUMBER_OF_OPERATIONS_POWER {
         results.push((
             function_under_test(
                 10,
@@ -109,6 +109,63 @@ pub fn create_transaction_size_test(
             10,
             usize::pow(10, i),
             usize::pow(10, NUMBER_OF_OPERATIONS_POWER - i),
+        ));
+    }
+    tx.send(CPUStatsCommand::Abort).unwrap();
+
+    write_to_csv(results, file_name);
+}
+
+
+pub fn create_simple_test(
+    function_under_test: fn(i32, usize, usize, &Sender<CPUStatsCommand>) -> u128,
+    file_name: &str,
+) {
+
+    println!("Running transaction size test with fn {}", file_name);
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(read_and_store_cpu_stats(rx, file_name.to_string()));
+    let mut results = Vec::<(u128, i32, usize, usize)>::new();
+
+        results.push((
+            function_under_test(
+                10,
+                usize::pow(10, 5),
+                usize::pow(10, 2),
+                &tx,
+            ),
+            10,
+            usize::pow(10, 5),
+            usize::pow(10, 2),
+        ));
+    
+    tx.send(CPUStatsCommand::Abort).unwrap();
+
+    write_to_csv(results, file_name);
+}
+
+
+pub fn create_transaction_big_size_test(
+    function_under_test: fn(i32, usize, usize, &Sender<CPUStatsCommand>) -> u128,
+    file_name: &str,
+) {
+    const NUMBER_OF_OPERATIONS_POWER: u32 = 8;
+
+    println!("Running transaction size test with fn {}", file_name);
+    let (tx, rx) = mpsc::channel();
+    thread::spawn(read_and_store_cpu_stats(rx, file_name.to_string()));
+    let mut results = Vec::<(u128, i32, usize, usize)>::new();
+    for i in 4..NUMBER_OF_OPERATIONS_POWER {
+        results.push((
+            function_under_test(
+                10,
+                usize::pow(10, i),
+                100,
+                &tx,
+            ),
+            10,
+            usize::pow(10, i),
+            100,
         ));
     }
     tx.send(CPUStatsCommand::Abort).unwrap();
